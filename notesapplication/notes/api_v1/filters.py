@@ -1,5 +1,5 @@
 from django_filters import rest_framework as filters
-from notes.models import Notes
+from notes.models import Note
 
 
 class ArchiveFilter(filters.FilterSet):
@@ -11,7 +11,7 @@ class ArchiveFilter(filters.FilterSet):
     archive = filters.BooleanFilter(method="filter_is_archive")
 
     class Meta:
-        model: Notes
+        model: Note
         fields = ("archive",)
 
     def filter_is_archive(queryset):
