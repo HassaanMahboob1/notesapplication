@@ -40,7 +40,9 @@ class Comment(models.Model):
     """
 
     text = models.CharField(max_length=299, default="")
-    note_id = models.ForeignKey(Note, on_delete=models.CASCADE, default="")
+    note_id = models.ForeignKey(
+        Note, on_delete=models.CASCADE, default="", related_name="comment"
+    )
     user = models.ForeignKey(Users, on_delete=models.CASCADE, default="")
     date_created = models.DateField(auto_now=True)
     date_updated = models.DateField(default=str(date.today()))

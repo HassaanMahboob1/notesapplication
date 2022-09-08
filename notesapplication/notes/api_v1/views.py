@@ -1,11 +1,9 @@
-from pyexpat import model
-from django.shortcuts import HttpResponse
-from django.core import serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
+from rest_framework import filters
 from notes.api_v1.permissions import SuperUserReadOnly
 from rest_framework.decorators import (
     api_view,
@@ -15,7 +13,12 @@ from rest_framework.decorators import (
 from django_filters.rest_framework import DjangoFilterBackend
 
 from notes.models import NoteVersion, Comment
-from .serializers import NotesSerializer, CommentSerializer, NoteVersionSerializer
+from .serializers import (
+    NotesSerializer,
+    CommentSerializer,
+    NoteVersionSerializer,
+    NoteCommentSerializer,
+)
 from notes.models import Note
 from notes.api_v1.filters import ArchiveFilter
 
@@ -28,8 +31,17 @@ class NotesViewSet(viewsets.ModelViewSet):
     """
 
     queryset = Note.objects.all()
-    permission_classes = (IsAuthenticated,)
-    serializer_class = NotesSerializer
+    permission_classes = (IsAuthenticated, SuperUserReadOnly)
+    serializer_class = NoteCommentSerializer
+    filter_backends = [
+        filters.SearchFilter,
+    ]
+    search_fields = ["text"]
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return NoteCommentSerializer
+        return NotesSerializer
 
     def get_queryset(self):
         queryset = Note.objects.all()
@@ -37,7 +49,7 @@ class NotesViewSet(viewsets.ModelViewSet):
         is_shared = self.request.query_params.get("is_shared")
         is_archive = self.request.query_params.get("is_archive")
 
-        if is_archive:
+        if is_archive == "True":
             queryset = Note.objects.all()
             user = self.request.user
             queryset = queryset.filter(user=user, archive=1)
@@ -48,6 +60,7 @@ class NotesViewSet(viewsets.ModelViewSet):
             queryset2 = queryset.filter(sharedwith=current_user)
             queryset = (queryset1 | queryset2).distinct()
             return queryset
+
         current_user = self.request.user.id
         queryset = queryset.filter(sharedwith=current_user)
         return queryset
