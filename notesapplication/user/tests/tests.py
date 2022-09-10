@@ -1,34 +1,59 @@
-from django.test import TestCase, Client
-from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
-import requests
+from rest_framework_simplejwt.tokens import RefreshToken
+from user.models import Users
+from user.tests.factory import UserFactory
 
 
-class TestViewSets(TestCase):
+class AuthenticatedTestCase(APITestCase):
+    """Test Case class for authenticated requests."""
+
+    user = None
+
+    @classmethod
+    def create_user_token(cls, user):
+        """Create user token and add it in user."""
+
+        refresh = RefreshToken.for_user(user)
+        user.refresh_token = str(refresh)
+        user.access_token = str(refresh.access_token)
+
     def setUp(self):
         super().setUp()
-        self.client = Client()
-        self._url = "http://127.0.0.1:8000/"
-        self.token = ""
 
-    def test_register_POST(self):
-        register = self._url + "register"
-        client = Client()
-        data = {
-            "email": "usmano.beg@gmail.com",
-            "first_name": "usmano",
-            "last_name": "beg",
-            "username": "usmanobeg",
-            "password": "usmanobeg123",
+        user, token = AuthenticatedTestCase.create_user_token(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"JWT {token}")
+        self.user = user
+        self.token = token
+        self.client.force_login(user)
+
+
+class UserLoginTestCase(APITestCase):
+    """Test Class to test user login API."""
+
+    def setUp(self):
+        self.url = "/login"
+        self.user1 = UserFactory.create()
+        self.user1.set_password("!@#123")
+        self.user1.save()
+
+    def test_login_api(self):
+        self.data = {
+            "username": self.user1.username,
+            "password": "!@#123",
         }
-        response = client.post(register, data=data, format="json")
-        self.assertEquals(response.status_code, 201)
+        response = self.client.post(self.url, self.data, format="json")
+        self.assertEqual(response.status_code, 200)
+        response_data = response.data
 
-    def test_Login_POST(self):
-        self.test_register_POST()
-        login = self._url + "api/token/"
-        data = {"username": "usmanobeg", "password": "usmanobeg123"}
-        response = self.client.post(login, data=data, format="json")
-        data = response.json()
-        self.token = data["access"]
-        self.assertEquals(response.status_code, 200)
+        self.assertIn("access", response.data)
+        self.assertIn("refresh", response.data)
+
+    def test_login_api_with_wrong_credentials(self):
+        self.data = {
+            "username": "notrandom",
+            "password": "!@#123",
+        }
+        response = self.client.post(self.url, self.data, format="json")
+
+        # Unauthorized user
+        self.assertEqual(response.status_code, 401)

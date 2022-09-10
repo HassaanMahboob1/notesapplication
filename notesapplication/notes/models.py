@@ -1,7 +1,6 @@
-from tkinter import CASCADE
-from tkinter.messagebox import NO
-from django.db import models
 from datetime import date
+
+from django.db import models
 from user.models import Users
 
 
@@ -10,7 +9,9 @@ class Note(models.Model):
     Note class to perform CRUD operations on Note
     """
 
-    title = models.CharField(max_length=39, default="", unique=True)
+    title = models.CharField(
+        max_length=39, default="", unique=True, blank=False, null=False
+    )
     text = models.CharField(max_length=199)
     date_created = models.DateField(default=str(date.today()))
     date_updated = models.DateField(default="")
@@ -43,6 +44,6 @@ class Comment(models.Model):
     note_id = models.ForeignKey(
         Note, on_delete=models.CASCADE, default="", related_name="comment"
     )
-    user = models.ForeignKey(Users, on_delete=models.CASCADE, default="")
-    date_created = models.DateField(auto_now=True)
+    user = models.ForeignKey(Users, on_delete=models.CASCADE)
+    date_created = models.DateField(default=str(date.today()))
     date_updated = models.DateField(default=str(date.today()))

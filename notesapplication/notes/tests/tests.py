@@ -1,62 +1,95 @@
-from django.test import TestCase, Client
+import email
+
+import requests
+from django.contrib.auth import get_user_model
+from django.test import Client
+from django.test import TestCase
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
-import requests
+from rest_framework_simplejwt.tokens import RefreshToken
+from user.tests.tests import AuthenticatedTestCase
+
+from .factory import NoteFactory
 
 
-class TestViewSets(TestCase):
+User = get_user_model()
+
+
+class CreateNotesAPITestCase(APITestCase):
+    url = "/notes/"
+
     def setUp(self):
+
+        self.user = User.objects.create_user(
+            username="nomanbeg",
+            password="nomanbeg123",
+            email="nomanbeg@hmail.com",
+            first_name="noman",
+            last_name="beg",
+        )
+
+        token = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
+        self.token = token.access_token
+        self.client.force_login(self.user)
         super().setUp()
-        self.client = Client()
-        self._url = "http://127.0.0.1:8000/"
-        self.token = ""
 
-    def test_register_POST(self):
-        register = self._url + "register"
-        client = Client()
-        data = {
-            "email": "usmano.beg@gmail.com",
-            "first_name": "usmano",
-            "last_name": "beg",
-            "username": "usmanobeg",
-            "password": "usmanobeg123",
-        }
-        response = client.post(register, data=data, format="json")
-        self.assertEquals(response.status_code, 201)
+        self.note1 = NoteFactory.create(user=self.user)
+        self.note2 = NoteFactory.create(user=self.user)
 
-    def test_Login_POST(self):
-        self.test_register_POST()
-        login = self._url + "api/token/"
-        data = {"username": "usmanobeg", "password": "usmanobeg123"}
-        response = self.client.post(login, data=data, format="json")
-        data = response.json()
-        self.token = data["access"]
-        self.assertEquals(response.status_code, 200)
+    def test_create_note(self):
+        data = {"title": "check search", "text": "search check", "archive": 0}
+        response = self.client.post(self.url, data=data, format="json")
+        self.assertEqual(response.status_code, 201)
+        # check title
+        self.assertEqual(response.data["title"], "check search")
+        # check text
+        self.assertEqual(response.data["text"], "search check")
 
-    def test_create_note_POST(self):
-        self.test_Login_POST()
-        create_note = self._url + "Notes/"
-        hed = {"Authorization": "Bearer " + self.token}
-        data = {
-            "title": "Note 6",
-            "text": "sixth-Party",
-            "date_created": "2022-08-30",
-            "date_updated": "2022-08-30",
-            "archive": 0,
-        }
-        response = requests.post(create_note, data=data, headers=hed)
-        self.assertEquals(response.status_code, 201)
+    # check if title is sent blank
+    def test_create_note_with_empty_field(self):
+        data = {"title": "", "text": "search check", "archive": 0}
+        response = self.client.post(self.url, data=data, format="json")
+        # status code check
+        self.assertEqual(response.status_code, 400)
+        # return message check
+        self.assertEqual(response.data["title"][0], "This field may not be blank.")
 
-    def test_notes_list_GET(self):
-        self.test_Login_POST()
-        create_note = self._url + "Notes/"
-        hed = {"Authorization": "Bearer " + self.token}
-        response = requests.get(create_note, headers=hed)
-        self.assertEquals(response.status_code, 200)
+    # check listing of notes
+    def test_list_note(self):
+        response = self.client.get(self.url, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]["title"], self.note1.title)
+        self.assertEqual(response.data[0]["text"], self.note1.text)
 
-    def test_notes_delete_DELETE(self):
-        self.test_Login_POST()
-        create_note = self._url + "Notes/30/"
-        hed = {"Authorization": "Bearer " + self.token}
-        response = requests.delete(create_note, headers=hed)
-        self.assertEquals(response.status_code, 204)
+    # check retrieval of note
+    def test_retrieve_note(self):
+        url = "/notes/1/"
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["title"], self.note1.title)
+        self.assertEqual(response.data["text"], self.note1.text)
+
+    # check if particular do not exists
+    def test_retrieve_note_not_exists(self):
+        url = "/notes/3/"
+        response = self.client.get(url, format="json")
+        # statuscode check
+        self.assertEqual(response.status_code, 404)
+        # return message check
+        self.assertEqual(response.data["detail"], "Not found.")
+
+    # check delete note
+    def test_delete_note(self):
+        url = "/notes/1/"
+        response = self.client.delete(url, format="json")
+        # statuscode check
+        self.assertEqual(response.status_code, 204)
+
+    # check delete note without passing id
+    def test_delete_note_without_id(self):
+        response = self.client.delete(self.url, format="json")
+        # statuscode check
+        self.assertEqual(response.status_code, 405)
+        # return message check
+        self.assertEqual(response.data["detail"], 'Method "DELETE" not allowed.')

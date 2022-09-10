@@ -1,26 +1,23 @@
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import viewsets
-from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.decorators import action
-from rest_framework import filters
-from notes.api_v1.permissions import SuperUserReadOnly
-from rest_framework.decorators import (
-    api_view,
-    authentication_classes,
-    permission_classes,
-)
 from django_filters.rest_framework import DjangoFilterBackend
-
-from notes.models import NoteVersion, Comment
-from .serializers import (
-    NotesSerializer,
-    CommentSerializer,
-    NoteVersionSerializer,
-    NoteCommentSerializer,
-)
-from notes.models import Note
 from notes.api_v1.filters import ArchiveFilter
+from notes.api_v1.permissions import SuperUserReadOnly
+from notes.models import Comment
+from notes.models import Note
+from notes.models import NoteVersion
+from rest_framework import filters
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.decorators import api_view
+from rest_framework.decorators import authentication_classes
+from rest_framework.decorators import permission_classes
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from .serializers import CommentSerializer
+from .serializers import NoteCommentSerializer
+from .serializers import NotesSerializer
+from .serializers import NoteVersionSerializer
 
 
 class NotesViewSet(viewsets.ModelViewSet):
