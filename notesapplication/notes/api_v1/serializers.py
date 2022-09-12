@@ -22,6 +22,7 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = "__all__"
+        read_only_fields = ("user",)
 
     def create(self, validated_data):
         users = Users.objects.all()
@@ -49,6 +50,7 @@ class NotesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Note
         fields = "__all__"
+        read_only_fields = ("user",)
 
     def create(self, validated_data):
         note = Note.objects.create(
