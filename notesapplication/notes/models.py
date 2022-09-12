@@ -34,6 +34,9 @@ class NoteVersion(models.Model):
     text = models.CharField(max_length=299)
     date_created = models.DateField(default=str(date.today()))
 
+    def __str__(self):
+        return self.text
+
 
 class Comment(models.Model):
     """
@@ -45,3 +48,6 @@ class Comment(models.Model):
     user = models.ForeignKey(Users, on_delete=models.CASCADE)
     date_created = models.DateField(default=str(date.today()))
     date_updated = models.DateField(default=str(date.today()))
+
+    def __str__(self):
+        return self.text

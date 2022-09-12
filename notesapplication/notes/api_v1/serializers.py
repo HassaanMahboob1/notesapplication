@@ -1,5 +1,6 @@
 from dataclasses import fields
 from datetime import date
+from typing import OrderedDict
 
 from django.core.paginator import Paginator
 from rest_framework import serializers
@@ -10,8 +11,6 @@ from user.models import Users
 from ..models import Comment
 from ..models import Note
 from ..models import NoteVersion
-
-NUMBER_TO_GET_LATEST_COMMENT = 1
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -77,12 +76,9 @@ class NotesSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        if len(representation["comment"]) > NUMBER_TO_GET_LATEST_COMMENT:
-            last_comment = representation["comment"][
-                len(representation["comment"]) - NUMBER_TO_GET_LATEST_COMMENT
-            ]
-            representation["comment"] = []
-            representation["comment"].append(last_comment)
+        last_comment = instance.comment.last()
+        last_comment_data = CommentSerializer(last_comment).data
+        representation["comment"] = last_comment_data
         return representation
 
 
@@ -108,3 +104,4 @@ class NoteVersionSerializer(serializers.ModelSerializer):
     class Meta:
         model = NoteVersion
         fields = "__all__"
+        read_only_fields = ("edited_by",)
