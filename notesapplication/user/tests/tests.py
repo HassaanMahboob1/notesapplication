@@ -1,6 +1,5 @@
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
-from user.models import Users
 from user.tests.factory import UserFactory
 
 

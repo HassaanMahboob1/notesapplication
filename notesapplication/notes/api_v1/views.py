@@ -1,5 +1,3 @@
-from django_filters.rest_framework import DjangoFilterBackend
-from notes.api_v1.filters import ArchiveFilter
 from notes.api_v1.permissions import SuperUserReadOnly
 from notes.models import Comment
 from notes.models import Note
@@ -7,17 +5,12 @@ from notes.models import NoteVersion
 from rest_framework import filters
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.decorators import api_view
-from rest_framework.decorators import authentication_classes
-from rest_framework.decorators import permission_classes
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 
+from .pagination import CustomPagination
 from .serializers import CommentSerializer
 from .serializers import NoteCommentSerializer
 from .serializers import NotesSerializer
-from .serializers import NoteVersionSerializer
 
 
 class NotesViewSet(viewsets.ModelViewSet):
@@ -69,26 +62,20 @@ class NotesViewSet(viewsets.ModelViewSet):
         """
         Get All versions of a Particular Note endpoint
         """
-        paginator = PageNumberPagination()
-        paginator.page_size = 10
         queryset = NoteVersion.objects.all()
         queryset = queryset.filter(note_id=pk)
-        result_page = paginator.paginate_queryset(queryset, request)
-        data = NoteVersionSerializer(result_page, many=True)
-        return paginator.get_paginated_response(data.data)
+        result_page = CustomPagination.pagination(queryset, request, pk)
+        return result_page
 
     @action(detail=True, methods=["GET"], name="comments")
     def comments(self, request, pk=None):
         """
         Get all comments API endpoint
         """
-        paginator = PageNumberPagination()
-        paginator.page_size = 10
         queryset = Comment.objects.all()
         queryset = queryset.filter(note_id=pk)
-        result_page = paginator.paginate_queryset(queryset, request)
-        data = NoteVersionSerializer(result_page, many=True)
-        return paginator.get_paginated_response(data.data)
+        result_page = CustomPagination.pagination(queryset, request, pk)
+        return result_page
 
 
 class CommentViewSet(viewsets.ModelViewSet):

@@ -1,11 +1,6 @@
-from dataclasses import fields
 from datetime import date
-from typing import OrderedDict
 
-from django.core.paginator import Paginator
 from rest_framework import serializers
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.validators import UniqueValidator
 from user.models import Users
 
 from ..models import Comment
@@ -77,8 +72,11 @@ class NotesSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         last_comment = instance.comment.last()
-        last_comment_data = CommentSerializer(last_comment).data
-        representation["comment"] = last_comment_data
+        comment = Comment.objects.all()
+        if last_comment in comment:
+            last_comment_data = CommentSerializer(last_comment).data
+            representation["comment"] = last_comment_data
+            return representation
         return representation
 
 

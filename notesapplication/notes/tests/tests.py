@@ -1,13 +1,6 @@
-import email
-
-import requests
 from django.contrib.auth import get_user_model
-from django.test import Client
-from django.test import TestCase
-from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
-from user.tests.tests import AuthenticatedTestCase
 
 from .factory import NoteFactory
 

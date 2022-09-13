@@ -1,7 +1,5 @@
 from django.utils import timezone
-from factory import SubFactory
 from factory.django import DjangoModelFactory
-from factory.fuzzy import FuzzyInteger
 from factory.fuzzy import FuzzyText
 from notes.models import Note
 
