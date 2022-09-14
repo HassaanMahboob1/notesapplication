@@ -19,18 +19,17 @@ class CommentSerializer(serializers.ModelSerializer):
         read_only_fields = ("user",)
 
     def create(self, validated_data):
-        users = Users.objects.all()
         request = self.context.get("request", None)
-        if request.user in users:
+        if request.user:
             comment = Comment.objects.create(
                 text=validated_data["text"],
-                note_id=validated_data["note_id"],
+                note=validated_data["note"],
                 user=request.user,
             )
             comment.save()
             return comment
         else:
-            raise serializers.ValidationError("User not exists")
+            raise serializers.ValidationError("User does not exists")
 
 
 class NotesSerializer(serializers.ModelSerializer):
@@ -39,7 +38,7 @@ class NotesSerializer(serializers.ModelSerializer):
                       operations and serializing the data
     """
 
-    comment = CommentSerializer(many=True, read_only=True)
+    comments = CommentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Note
@@ -51,8 +50,6 @@ class NotesSerializer(serializers.ModelSerializer):
             text=validated_data["text"],
             title=validated_data["title"],
             archive=validated_data["archive"],
-            date_created=date.today(),
-            date_updated=date.today(),
             user=self.context["request"].user,
         )
         note.save()
@@ -61,21 +58,20 @@ class NotesSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         request = self.context.get("request", None)
         note_version = NoteVersion.objects.create(
-            note_id=instance,
+            note=instance,
             edited_by=request.user,
             title=instance.title,
             text=instance.text,
-            date_updated=date.today(),
         )
         return super().update(instance, validated_data)
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        last_comment = instance.comment.last()
-        comment = Comment.objects.all()
-        if last_comment in comment:
+        last_comment = instance.comments.last()
+        comments = Comment.objects.all()
+        if last_comment in comments:
             last_comment_data = CommentSerializer(last_comment).data
-            representation["comment"] = last_comment_data
+            representation["comments"] = last_comment_data
             return representation
         return representation
 
@@ -85,8 +81,6 @@ class NoteCommentSerializer(serializers.ModelSerializer):
     NoteCommentSerializer : Serializer for showing comments with
                             the particular note (when retrieve method is called)
     """
-
-    comment = serializers.SerializerMethodField("paginated_comment")
 
     class Meta:
         model = Note

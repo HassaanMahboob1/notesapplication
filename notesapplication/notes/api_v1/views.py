@@ -35,24 +35,21 @@ class NotesViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Note.objects.all()
-        user = self.request.user
         is_shared = self.request.query_params.get("is_shared")
         is_archive = self.request.query_params.get("is_archive")
 
+        current_user = self.request.user
+        user_notes_queryset = queryset.filter(user=current_user, archive=0)
+        shared_notes_queryset = queryset.filter(sharedwith=current_user)
+        queryset = (user_notes_queryset | shared_notes_queryset).distinct()
+
         if is_archive == "True":
             queryset = Note.objects.all()
-            user = self.request.user
-            queryset = queryset.filter(user=user, archive=1)
-            return queryset
-        if is_shared is None:
-            current_user = self.request.user.id
-            queryset1 = queryset.filter(user=user, archive=0)
-            queryset2 = queryset.filter(sharedwith=current_user)
-            queryset = (queryset1 | queryset2).distinct()
-            return queryset
+            queryset = queryset.filter(user=current_user, archive=1)
 
-        current_user = self.request.user.id
-        queryset = queryset.filter(sharedwith=current_user)
+        elif is_shared == "True":
+            queryset = queryset.filter(sharedwith=current_user)
+
         return queryset
 
     serializer = NotesSerializer(queryset, many=True)
@@ -64,7 +61,7 @@ class NotesViewSet(viewsets.ModelViewSet):
         """
         queryset = NoteVersion.objects.all()
         queryset = queryset.filter(note_id=pk)
-        result_page = CustomPagination.pagination(queryset, request, pk)
+        result_page = CustomPagination.pagination(queryset, request)
         return result_page
 
     @action(detail=True, methods=["GET"], name="comments")
@@ -74,7 +71,7 @@ class NotesViewSet(viewsets.ModelViewSet):
         """
         queryset = Comment.objects.all()
         queryset = queryset.filter(note_id=pk)
-        result_page = CustomPagination.pagination(queryset, request, pk)
+        result_page = CustomPagination.pagination(queryset, request)
         return result_page
 
 
@@ -88,6 +85,5 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
 
     def get_queryset(self):
-        note_id = self.request.query_params.get("note_id")
         queryset = Comment.objects.all()
         return queryset
