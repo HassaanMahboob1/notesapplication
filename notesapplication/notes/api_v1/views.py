@@ -1,8 +1,8 @@
+from django_filters import rest_framework as rest_filters
 from notes.api_v1.permissions import SuperUserReadOnly
 from notes.models import Comment
 from notes.models import Note
 from notes.models import NoteVersion
-from rest_framework import filters
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -24,8 +24,9 @@ class NotesViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, SuperUserReadOnly)
     serializer_class = NoteCommentSerializer
     filter_backends = [
-        filters.SearchFilter,
+        rest_filters.DjangoFilterBackend,
     ]
+    filterset_fields = ("archive",)
     search_fields = ["text"]
 
     def get_serializer_class(self):
@@ -34,6 +35,7 @@ class NotesViewSet(viewsets.ModelViewSet):
         return NotesSerializer
 
     def get_queryset(self):
+
         queryset = Note.objects.all()
         is_shared = self.request.query_params.get("is_shared")
         is_archive = self.request.query_params.get("is_archive")

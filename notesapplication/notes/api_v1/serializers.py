@@ -1,7 +1,4 @@
-from datetime import date
-
 from rest_framework import serializers
-from user.models import Users
 
 from ..models import Comment
 from ..models import Note
