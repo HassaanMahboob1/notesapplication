@@ -1,6 +1,16 @@
 from django.db import models
-from datetime import date
-from user.models import Users
+from users.models import User
+
+
+class Tag(models.Model):
+    """
+    Tag class for tagging notes
+    """
+
+    name = models.CharField(max_length=32, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 class Note(models.Model):
@@ -8,13 +18,44 @@ class Note(models.Model):
     Note class to perform CRUD operations on Note
     """
 
-    title = models.CharField(max_length=20, default="", unique=True)
-    text = models.CharField(max_length=200)
-    date_created = models.DateField(default=str(date.today()))
-    date_updated = models.DateField(default="")
-    user = models.ForeignKey(Users, on_delete=models.CASCADE, default="")
+    title = models.CharField(max_length=31, default="")
+    text = models.CharField(max_length=255)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     archive = models.BooleanField(default=False)
-    sharedwith = models.ManyToManyField(Users, related_name="sharedwith", blank=True)
+    sharedwith = models.ManyToManyField(User, related_name="shared_with", blank=True)
+    tags = models.ManyToManyField(Tag, related_name="notes", blank=True)
+
+    def __str__(self):
+        return self.text
+
+
+class NoteVersion(models.Model):
+    """
+    NoteVersion class to add versions of a note
+    """
+
+    note = models.ForeignKey(Note, on_delete=models.CASCADE)
+    edited_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=31, default="")
+    text = models.CharField(max_length=255)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.text
+
+
+class Comment(models.Model):
+    """
+    Comment class to add comments on a specified note
+    """
+
+    text = models.CharField(max_length=255, default="")
+    note = models.ForeignKey(Note, on_delete=models.CASCADE, related_name="comments")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.text

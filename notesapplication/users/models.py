@@ -1,8 +1,8 @@
-from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db import models
 
 
-class Users(AbstractUser):
+class User(AbstractUser):
     """
     Users class to Register new user and login
     """
