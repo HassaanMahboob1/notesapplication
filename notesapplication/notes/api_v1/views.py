@@ -35,7 +35,6 @@ class NotesViewSet(viewsets.ModelViewSet):
         return NotesSerializer
 
     def get_queryset(self):
-
         queryset = Note.objects.all()
         is_shared = self.request.query_params.get("is_shared")
         is_archive = self.request.query_params.get("is_archive")

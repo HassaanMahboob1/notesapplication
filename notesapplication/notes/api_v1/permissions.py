@@ -17,6 +17,6 @@ class SuperUserReadOnly(permissions.BasePermission):
             return True
 
     def has_object_permission(self, request, view, obj):
-        if request.user == obj.user or request.user in obj.sharedwith.all():
+        if request.user == obj.user or request.user in obj.shared_with.all():
             return True
         return False

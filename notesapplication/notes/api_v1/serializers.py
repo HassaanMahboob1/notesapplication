@@ -3,6 +3,7 @@ from rest_framework import serializers
 from ..models import Comment
 from ..models import Note
 from ..models import NoteVersion
+from ..models import Tag
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -36,6 +37,9 @@ class NotesSerializer(serializers.ModelSerializer):
     """
 
     comments = CommentSerializer(many=True, read_only=True)
+    tags = serializers.ListSerializer(
+        child=serializers.CharField(min_length=0, max_length=32)
+    )
 
     class Meta:
         model = Note
@@ -43,16 +47,23 @@ class NotesSerializer(serializers.ModelSerializer):
         read_only_fields = ("user",)
 
     def create(self, validated_data):
+        tag_ids = create_tags(validated_data)
         note = Note.objects.create(
             text=validated_data["text"],
             title=validated_data["title"],
             archive=validated_data["archive"],
             user=self.context["request"].user,
         )
+        note.tags.set(tag_ids)
         note.save()
         return note
 
     def update(self, instance, validated_data):
+        if "tags" in validated_data:
+            tag_ids = create_tags(validated_data)
+            instance.tags.set(tag_ids)
+            validated_data.pop("tags")
+            instance.save()
         request = self.context.get("request", None)
         note_version = NoteVersion.objects.create(
             note=instance,
@@ -94,3 +105,21 @@ class NoteVersionSerializer(serializers.ModelSerializer):
         model = NoteVersion
         fields = "__all__"
         read_only_fields = ("edited_by",)
+
+
+def create_tags(validated_data):
+    """
+    create_tags : Create tags in db if any particular tag does not exists
+    """
+    tags_in_db = list(
+        Tag.objects.filter(name__in=validated_data["tags"]).values_list(
+            "name", flat=True
+        )
+    )
+    tags_not_in_db = list(set(validated_data["tags"]) - set(tags_in_db))
+    tags_list = [Tag(name=tag) for tag in tags_not_in_db]
+    Tag.objects.bulk_create(tags_list, ignore_conflicts=True)
+    tag_ids = Tag.objects.filter(name__in=validated_data["tags"]).values_list(
+        "id", flat=True
+    )
+    return tag_ids

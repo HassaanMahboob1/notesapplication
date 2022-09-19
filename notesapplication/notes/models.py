@@ -2,6 +2,17 @@ from django.db import models
 from users.models import User
 
 
+class Tag(models.Model):
+    """
+    Tag class for tagging notes
+    """
+
+    name = models.CharField(max_length=32, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Note(models.Model):
     """
     Note class to perform CRUD operations on Note
@@ -13,7 +24,8 @@ class Note(models.Model):
     date_updated = models.DateTimeField(auto_now=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     archive = models.BooleanField(default=False)
-    sharedwith = models.ManyToManyField(User, related_name="sharedwith", blank=True)
+    sharedwith = models.ManyToManyField(User, related_name="shared_with", blank=True)
+    tags = models.ManyToManyField(Tag, related_name="notes", blank=True)
 
     def __str__(self):
         return self.text
